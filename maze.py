@@ -1,9 +1,10 @@
 from pygame import *
+import random
 
 init()
 mixer.init()
 mixer.music.load('Cypis_-_Polskaya_Korova.mp3')
-#mixer.music.play()
+mixer.music.play()
 mixer.music.set_volume(0.3)
 
 
@@ -32,16 +33,18 @@ class NPC(sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.mask = mask.from_surface(self.image)
         all_sprites.add(self)
 
 class Player(NPC):
     def __init__(self, sprite_img, width, height, x, y):
         super().__init__(sprite_img, width, height, x, y)
         self.hp = 100
-        self.speed = 2
+        self.speed = 1
 
     def update(self):
         key_pressed = key.get_pressed()
+        old_pos = self.rect.x, self.rect.y
         if key_pressed[K_w] and self.rect.y > 0:
             self.rect.y -= self.speed
         if key_pressed[K_s] and self.rect.bottom < HEIGHT:
@@ -50,21 +53,37 @@ class Player(NPC):
             self.rect.x += self.speed
         if key_pressed[K_a] and self.rect.x > 0:
             self.rect.x -= self.speed
+        collide_list = sprite.spritecollide(self, walls, False, sprite.collide_mask)
+        if len(collide_list) > 0:
+            self.rect.x, self.rect.y = old_pos
+
         
         
 class Bos(NPC):
     def __init__(self, sprite_img, width, height, x, y):
         super().__init__(sprite_img, width, height, x, y)
-        self.damage = 10
+        self.damage = 100
         self.speed = 1
+        self.dir_list = ['right', 'left', 'up', 'down']
+        self.dir = random.choice(self.dir_list)
 
-    # def run(self):
-    #     if key_pressed[K_w] and self.rect.y > 0 and self.rect.bottom < HEIGHT and self.rect.right < WIDTH and self.rect.x > 0:
-    #         self.rect.y -= self.speed
+    def update(self):
+        old_pos = self.rect.x, self.rect.y
+        if self.dir == 'left':
+            self.rect.x -= self.speed
+        elif self.dir == 'right':
+            self.rect.x += self.speed
+        elif self.dir == 'up':
+            self.rect.y -= self.speed
+        elif self.dir == 'down':
+            self.rect.y += self.speed
+        collide_list = sprite.spritecollide(self, walls, False, sprite.collide_mask)
+        if len(collide_list) > 0:
+            self.rect.x, self.rect.y = old_pos
 
-player = Player(p_img, 30, 30, 300, 300)
-#warrior = Bos(warrior_img, 100, 70, 500, 500)
+player = Player(p_img, 20, 20, 300, 300)
 walls = sprite.Group()
+boses = sprite.Group()
 with open("map.txt", "r") as f:
     map = f.readlines()
     x = 0
@@ -78,6 +97,8 @@ with open("map.txt", "r") as f:
                 player.rect.y = y
             if symbol == "t":
                 treasure = NPC(treasure_img, TILESIZE, TILESIZE, x, y)
+            if symbol == "b":
+                boses.add(Bos(warrior_img, TILESIZE, TILESIZE, x, y))
             x += TILESIZE
         y += TILESIZE
         x = 0
@@ -92,6 +113,5 @@ while run:
 
     all_sprites.draw(window)
     all_sprites.update()
-
     display.update()
     clock.tick(FPS)
