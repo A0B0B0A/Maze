@@ -20,10 +20,10 @@ window = display.set_mode((WIDTH, HEIGHT))
 FPS = 90
 clock = time.Clock()
 
-bg = image.load('background.jpg')
+bg = image.load('fon.png')
 bg = transform.scale(bg,(WIDTH, HEIGHT))
 
-p_img = image.load('hero.png')
+p_img = image.load('man.png')
 warrior_img = image.load('korova.png')
 wall_img = image.load('wall.png')
 treasure_img = image.load('treasure.png')
@@ -44,7 +44,7 @@ class Player(NPC):
     def __init__(self, sprite_img, width, height, x, y):
         super().__init__(sprite_img, width, height, x, y)
         self.hp = 100
-        self.speed = 1
+        self.speed = 3
 
     def update(self):
         key_pressed = key.get_pressed()
@@ -76,6 +76,9 @@ class Bos(NPC):
 
     def update(self):
         old_pos = self.rect.x, self.rect.y
+        player_pos = player.rect.x, player.rect.y
+        self.dir = self.get_direction_to_player(player_pos)
+
         if self.dir == 'left':
             self.rect.x -= self.speed
         elif self.dir == 'right':
@@ -84,11 +87,25 @@ class Bos(NPC):
             self.rect.y -= self.speed
         elif self.dir == 'down':
             self.rect.y += self.speed
-        
-        collide_list = sprite.spritecollide(self, walls, False, sprite.collide_mask)
+
+        collide_list = sprite.spritecollide(self, walls, True, sprite.collide_mask)
         if len(collide_list) > 0:
             self.rect.x, self.rect.y = old_pos
-            self.dir = random.choice(self.dir_list)
+
+    def get_direction_to_player(self, player_pos):
+        dx = player_pos[0] - self.rect.x
+        dy = player_pos[1] - self.rect.y
+
+        if abs(dx) > abs(dy):
+            if dx > 0:
+                return 'right'
+            else:
+                return 'left'
+        else:
+            if dy > 0:
+                return 'down'
+            else:
+                return 'up'
             
 
 player = Player(p_img, 20, 20, 300, 300)
@@ -125,7 +142,7 @@ while run:
         finish = True
     
     if sprite.collide_mask(player, treasure):
-        finich = True
+        finish = True
         game_over_text = font1.render("You win!", True, (0, 255, 0))
         
     all_sprites.draw(window)
